@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quran.ai - Premium Ayah Finder</title>
+    <!-- Fonts for Arabic, Urdu, and general UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&family=Noto+Naskh+Arabic:wght@400;700&family=Segoe+UI:wght<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* FIX: Setup HTML/Body for dynamic height calculation */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0; 
+            overflow: hidden; 
+            --vh: 1vh;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0d0d0d;
+            display: flex;
+            justify-content: center;
+            align-items: center; 
+        }
+
+        .chat-container {
+            width: 100vw; 
+            height: calc(var(--vh, 1vh) * 100); 
+            max-width: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 1; 
+            
+            background: linear-gradient(to bottom, #2c0f45 0%, #0d0d0d 100%);
+            border-radius: 0; 
+            padding: 20px 15px; 
+            box-shadow: none; 
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* To position search icon right */
+            margin-bottom: 20px;
+            flex-shrink: 0; 
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .chat-header h1 {
+            color: #d6a7ff;
+            font-size: 26px;
+            margin: 0;
+        }
+        
+        /* NEW: Search icon button */
+        #surahSearchToggle {
+            background: none;
+            border: none;
+            color: #d6a7ff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        #surahSearchToggle:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+
+        .chat-box {
+            flex-grow: 1;
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+            padding-right: 10px;
+        }
+
+        .message {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            border-radius: 15px; 
+            padding: 12px;
+            margin: 10px 0 10px 0; 
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .divider {
+            height: 1px;
+            background: #6B5B95;
+            margin: 15px 0;
+            opacity: 0.5;
+        }
+
+        .typing {
+            width: 80px;
+            height: 10px;
+            margin: 15px auto;
+            display: flex;
+            justify-content: space-around;
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .typing span {
+            width: 10px;
+            height: 10px;
+            background: #a45af7;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            background: #1a1a1a;
+            border-radius: 25px;
+            padding: 5px 10px;
+            margin-top: 15px; 
+            flex-shrink: 0; 
+        }
+
+        .input-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .input-container button {
+            background: transparent;
+            border: none;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .input-container button#toolsToggleBtn {
+            background: transparent; /* Ensure button background is transparent */
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            margin-right: 5px; /* Spacing between tool icon and input field */
+        }
+
+
+        .input-container button img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .suggestions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-chip {
+            padding: 5px 10px;
+            background: #4A3B6A;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.3s;
+            color: white;
+        }
+
+        /* --- STYLES FOR TOOL CONTROLS --- */
+        .tool-controls {
+            display: flex;
+            gap: 8px; 
+            margin-top: 10px;
+            padding: 10px 0;
+            flex-direction: column; 
+            align-items: flex-start; 
+            flex-shrink: 0;
+            padding-left: 10px; 
+        }
+
+        .tool-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #4A3B6A;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .tool-selected {
+            background: #a45af7;
+            box-shadow: 0 4px 8px rgba(164, 90, 247, 0.4);
+        }
+
+        .tool-unselected {
+            background: #333;
+            opacity: 0.7;
+            box-shadow: none;
+        }
+        
+        /* STYLES FOR SEPARATE NAVIGATION/AUDIO PANEL */
+        .action-panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px; 
+            padding: 10px;
+            margin: 10px 0 10px 0; 
+            box-shadow: none; 
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* Final actions row (Copy All / Share All) */
+        .final-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: space-around; 
+            margin-top: 10px; 
+            padding-top: 10px; 
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .final-actions button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 25px; 
+            background: #4c1c7c;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s, transform 0.1s;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* NEW: Per-language action bar style */
+        .language-action-bar {
+            display: flex;
+            justify-content: flex-end; /* Align actions to the right */
+            gap: 8px;
+            margin-top: 5px;
+            padding: 5px 0;
+            opacity: 0; /* Default hidden state for fade effect */
+            transition: opacity 0.5s ease; /* Fade effect CSS */
+        }
+
+        /* Styling for the icon-only buttons */
+        .language-action-bar button {
+            padding: 8px; /* Square padding for icon only */
+            width: 40px; /* Fixed size for touch target */
+            height: 40px;
+            border: none;
+            border-radius: 50%; /* Circle shape */
+            background: #6B5B95; 
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.9rem; /* Icon size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0; /* No gap for icon only */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background 0.2s;
+        }
+
+        .language-action-bar button:hover {
+            background: #a45af7;
+        }
+
+        /* Ayah List Button Styling */
+        .ayah-list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            padding: 10px 0;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .ayah-list-grid button {
+            background: #4A3B6A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            line-height: 1;
+            height: 40px; 
+        }
+
+        .ayah-list-grid button:hover, .ayah-list-grid button:focus {
+            background: #a45af7;
+        }
+
+        .full-surah-btn {
+            background: #3c2a5a !important; 
+            font-weight: bold;
+            flex-grow: 2;
+            border-top: none !important; /* Override the border inherited from .final-actions */
+        }
+
+        .final-actions button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+
+        .audio-progress {
+            margin-top: 5px; 
+            width: 100%;
+            height: 15px; 
+            background: #333; 
+            border-radius: 5px;
+            overflow: hidden;
+            cursor: pointer; 
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #a45af7;
+            transition: width 0.1s linear;
+        }
+
+        /* Styling for the small, per-language copy buttons (Removed as per new design) */
+        .inline-action-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        /* Removed .copy-btn as a separate small icon in favor of .language-action-bar buttons */
+
+
+        /* ============================================== */
+        /* Surah Search Overlay Styles */
+        /* ============================================== */
+        .surah-search-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(var(--vh, 1vh) * 100);
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            transition: opacity 0.3s ease;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #2a2a2a;
+            border-radius: 25px;
+            padding: 5px 15px;
+            margin-bottom: 15px;
+        }
+        
+        #surahSearchInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            padding: 10px 10px 10px 0;
+            outline: none;
+        }
+        
+        #closeSearchBtn {
+            background: none;
+            border: none;
+            color: #d6a7ff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .surah-list-results {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .surah-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            padding: 15px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .surah-item:hover {
+            background: rgba(164, 90, 247, 0.2);
+        }
+
+        .surah-number {
+            font-weight: bold;
+            color: #d6a7ff;
+            font-size: 1.1rem;
+            margin-right: 15px;
+        }
+
+        .surah-name {
+            flex-grow: 1;
+            font-size: 1.1rem;
+        }
+
+        .surah-arabic {
+            font-family: 'Noto Naskh Arabic', serif;
+            font-size: 1.2rem;
+            color: #a45af7;
+        }
+        
+        .surah-ayah-count {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-left: 10px;
+        }
+
+        /* Initial state hidden */
+        .surah-search-panel.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* ============================================== */
+
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-left">
+                <img src="https://i.imgur.com/UCDoGK9.png" alt="DP">
+                <h1>Find Ayah</h1>
+            </div>
+            <!-- Search button to open the Surah search panel -->
+            <button id="surahSearchToggle" onclick="toggleSurahSearch()"><i class="fas fa-search"></i></button>
+        </div>
+        
+        <div class="chat-box" id="chatBox">
+            <div class="message">Assalamu_alaykum w_rh! Click the tools icon below to select your desired outputs (Arabic, Urdu, English, Audio) and enter an Ayah reference (e.g., 1.2 or just 1 for the first verse).</div>
+            <div class="suggestions">
+                <div class="suggestion-chip" onclick="fetchVerse('1.1')">1.1</div>
+                <div class="suggestion-chip" onclick="fetchVerse('2.255')">2.255</div>
+                <div class="suggestion-chip" onclick="fetchVerse('112.1')">112.1</div>
+                <div class="suggestion-chip" onclick="handleSingleSurahInput('114')">Surah 114</div>
+            </div>
+        </div>
+        <div class="typing" id="typing">
+            <span></span><span></span><span></span>
+        </div>
+
+        <!-- TOOL CONTROL PANEL: HIDDEN BY DEFAULT, SHOWN ON ICON CLICK -->
+        <div class="tool-controls" id="toolControls" style="display: none;">
+            <button id="toolBtn-arabic" class="tool-btn tool-selected" onclick="toggleTool('arabic')"><i class="fas fa-language"></i> Arabic</button>
+            <button id="toolBtn-urdu" class="tool-btn tool-selected" onclick="toggleTool('urdu')"><i class="fas fa-file-alt"></i> Urdu</button>
+            <button id="toolBtn-english" class="tool-btn tool-selected" onclick="toggleTool('english')"><i class="fas fa-file-alt"></i> English</button>
+            <button id="toolBtn-audio" class="tool-btn tool-selected" onclick="toggleTool('audio')"><i class="fas fa-volume-up"></i> Audio</button>
+        </div>
+        
+        <div class="input-container">
+            <!-- TOOLS ICON BUTTON -->
+            <button id="toolsToggleBtn" onclick="toggleToolsPanel(event)" title="Toggle Tools">
+                <i class="fas fa-tools" style="color: #d6a7ff; font-size: 1.1rem;"></i>
+            </button>
+            
+            <input type="text" id="userInput" placeholder="Enter Surah.Ayah (e.g. 1.2 or just 1)">
+            <button id="sendBtn" onclick="processInput()"><img src="https://i.imgur.com/ssx89PL.png" alt="Send"></button>
+        </div>
+    </div>
+    
+    <!-- Surah Search Overlay Panel -->
+    <div class="surah-search-panel hidden" id="surahSearchPanel">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search" style="color: #fff; margin-right: 10px;"></i>
+            <input type="text" id="surahSearchInput" placeholder="Search Surah by name or number..." oninput="filterSurahs()">
+            <button id="closeSearchBtn" onclick="toggleSurahSearch()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="surah-list-results" id="surahListResults">
+            <!-- Surah list will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        // --- Mobile Height Fix (Vantagem of CSS Custom Properties) ---
+        function setFullHeight() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', ${vh}px);
+        }
+        window.addEventListener('load', setFullHeight);
+        window.addEventListener('resize', setFullHeight);
+        setFullHeight(); 
+        // --- End Mobile Height Fix ---
+
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typing = document.getElementById('typing');
+        const surahSearchPanel = document.getElementById('surahSearchPanel');
+        const surahListResults = document.getElementById('surahListResults');
+        const surahSearchInput = document.getElementById('surahSearchInput');
+
+        let currentAudio = null;
+        let isFetching = false;
+        const STREAM_THRESHOLD = 80; 
+
+        // Initial state for the tools (all ON by default)
+        let settings = {
+            arabic: true,
+            urdu: true,
+            english: true,
+            audio: true, 
+        };
+
+        // Initialize tool button states
+        ['arabic', 'urdu', 'english', 'audio'].forEach(tool => {
+            const button = document.getElementById(toolBtn-${tool});
+            if (settings[tool]) {
+                button.classList.add('tool-selected');
+            } else {
+                button.classList.add('tool-unselected');
+            }
+        });
+
+        function toggleToolsPanel(event) {
+            if (event) event.stopPropagation();
+            
+            const controls = document.getElementById('toolControls');
+            if (controls.style.display === 'none' || controls.style.display === '') {
+                controls.style.display = 'flex';
+                // Only scroll smoothly if tool panel is opened, to show all options
+                smoothScrollToBottom(chatBox); 
+            } else {
+                controls.style.display = 'none';
+            }
+        }
+        
+        document.addEventListener('click', (event) => {
+            const controls = document.getElementById('toolControls');
+            const toggleBtn = document.getElementById('toolsToggleBtn');
+            
+            if (controls && controls.style.display === 'flex' && 
+                !controls.contains(event.target) && 
+                !toggleBtn.contains(event.target) &&
+                !document.getElementById('userInput').contains(event.target)) {
+                controls.style.display = 'none';
+            }
+        });
+
+
+        function toggleTool(toolName) {
+            settings[toolName] = !settings[toolName];
+            const button = document.getElementById(toolBtn-${toolName});
+            
+            if (settings[toolName]) {
+                button.classList.add('tool-selected');
+                button.classList.remove('tool-unselected');
+            } else {
+                button.classList.remove('tool-selected');
+                button.classList.add('tool-unselected');
+            }
+        }
+
+        // --- Data Definitions ---
+        const surahAyahCounts = [
+            7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 
+            112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 
+            89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 
+            12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 
+            30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 4, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
+        ];
+        const surahNames = [
+            "Al-Fatiha", "Al-Baqarah", "Aal-E-Imran", "An-Nisa", "Al-Ma'ida", "Al-An'am",
+            "Al-A'raf", "Al-Anfal", "At-Tawba", "Yunus", "Hud", "Yusuf", "Ar-Ra'd",
+            "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Taha", 
+            "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara",
+            "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum", "Luqman", "As-Sajda", 
+            "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", 
+            "Ghafir", "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiya",
+            "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf", "Adh-Dhariyat",
+            "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'a", "Al-Hadid",
+            "Al-Mujadila", "Al-Hashr", "Al-Mumtahina", "As-Saff", "Al-Jumu'a", 
+            "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", 
+            "Al-Qalam", "Al-Haqqa", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil",
+            "Al-Muddaththir", "Al-Qiyama", "Al-Insan", "Al-Mursalat", "An-Naba", 
+            "An-Nazi'at", "Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin", 
+            "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiya", 
+            "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Lail", "Ad-Duha", "Ash-Sharh",
+            "At-Tin", "Al-Alaq", "Al-Qadr", "Al-Bayyina", "Az-Zalzala", "Al-Adiyat",
+            "Al-Qari'a", "At-Takathur", "Al-Asr", "Al-Humaza", "Al-Fil", "Quraish",
+            "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Masad", "Al-Ikhlas",
+            "Al-Falaq", "An-Nas"
+        ].slice(0, 114);
+
+        const surahArabicNames = [
+            "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام",
+            "الأعراف", "الأنفال", "التوبة", "يونس", "هود", "يوسف", "الرعد",
+            "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه", 
+            "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء",
+            "النمل", "القصص", "العنكبوت", "الروم", "لقمان", "السجدة", 
+            "الأحزاب", "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", 
+            "غافر", "فصلت", "الشورى", "الزخرف", "الدخان", "الجاثية",
+            "الأحقاف", "محمد", "الفتح", "الحجرات", "ق", "الذاريات",
+            "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد",
+            "المجادلة", "الحشر", "الممتحنة", "الصف", "الجمعة", 
+            "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", 
+            "القلم", "الحاقة", "المعارج", "نوح", "الجن", "المزمل",
+            "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", 
+            "النازعات", "عبس", "التكوير", "الإنفطار", "المطففين", 
+            "الإنشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", 
+            "الفجر", "البلد", "الشمس", "الليل", "الضحى", "الشرح",
+            "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات",
+            "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش",
+            "الماعون", "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص",
+            "الفلق", "الناس"
+        ].slice(0, 114);
+
+        // Consolidated Surah Data
+        const surahData = surahNames.map((name, index) => ({
+            number: index + 1,
+            nameEnglish: name,
+            nameArabic: surahArabicNames[index],
+            ayahs: surahAyahCounts[index]
+        }));
+
+
+        // --- Core Functions ---
+
+        // UPDATED: Simple, aggressive scroll down to always show the latest content.
+        function smoothScrollToBottom(chatBox) {
+            chatBox.scroll({
+                top: chatBox.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+
+        function getAdjacentAyah(currentSurah, currentAyah, direction) {
+            let newSurah = currentSurah;
+            let newAyah = currentAyah;
+            const totalSurahs = 114;
+
+            if (direction === 'next') {
+                const currentSurahMaxAyah = surahAyahCounts[currentSurah - 1];
+                if (currentAyah < currentSurahMaxAyah) {
+                    newAyah = currentAyah + 1;
+                } else {
+                    newSurah = (currentSurah % totalSurahs) + 1; 
+                    newAyah = 1;
+                }
+            } else if (direction === 'prev') {
+                if (currentAyah > 1) {
+                    newAyah = currentAyah - 1;
+                } else {
+                    newSurah = (currentSurah === 1) ? totalSurahs : currentSurah - 1;
+                    newAyah = surahAyahCounts[newSurah - 1];
+                }
+            }
+            return ${newSurah}.${newAyah};
+        }
+
+        function showMessage(html) {
+            const botMsg = document.createElement('div');
+            botMsg.className = "message";
+            chatBox.appendChild(botMsg);
+            botMsg.innerHTML = html;
+            smoothScrollToBottom(chatBox); // Scrolls on new message post
+            return botMsg; 
+        }
+
+        function initializeStream(labelId) {
+            // This function is no longer strictly needed for visibility, 
+            // but kept as a placeholder if needed later.
+        }
+
+        function streamCharByChar(labelId, contentId, text, delay = 5) { 
+            return new Promise(resolve => {
+                initializeStream(labelId);
+                const content = document.getElementById(contentId);
+                let i = 0;
+                const chatBox = document.getElementById('chatBox');
+
+                const interval = setInterval(() => {
+                    if (i < text.length) {
+                        content.textContent += text.charAt(i);
+                        i++;
+                        smoothScrollToBottom(chatBox); // Scrolls constantly during streaming
+                    } else {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, delay);
+            });
+        }
+        function streamWordByWord(labelId, contentId, text, delay = 2) { 
+            return new Promise(resolve => {
+                initializeStream(labelId);
+                const content = document.getElementById(contentId);
+                const words = text.split(/\s+/);
+                let i = 0;
+                const chatBox = document.getElementById('chatBox');
+
+                const interval = setInterval(() => {
+                    if (i < words.length) {
+                        if (words[i].length > 0) {
+                            content.textContent += words[i] + ' '; 
+                        }
+                        i++;
+                        smoothScrollToBottom(chatBox); // Scrolls constantly during streaming
+                    } else {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, delay);
+            });
+        }
+
+        function streamText(labelId, contentId, text) { 
+            if (text.length <= STREAM_THRESHOLD) {
+                return streamCharByChar(labelId, contentId, text, 5); 
+            } else {
+                return streamWordByWord(labelId, contentId, text, 2);
+            }
+        }
+
+        function validateInput(input) {
+            const regex = /^(\d+)\.(\d+)$/;
+            const match = input.match(regex);
+            if (!match) return null;
+            const surah = parseInt(match[1]);
+            const verse = parseInt(match[2]);
+            if (surah < 1 || surah > 114 || verse < 1) return null;
+            
+            const maxAyah = surahAyahCounts[surah - 1];
+            if (verse > maxAyah) return null;
+
+            return { surah, verse };
+        }
+        
+        // =========================================================
+        // Surah Search Functions
+        // =========================================================
+
+        function renderSurahList(surahs) {
+            let html = '';
+            if (surahs.length === 0) {
+                html = '<p style="color: #999; text-align: center; margin-top: 50px;">No Surahs found matching your search.</p>';
+            } else {
+                surahs.forEach(s => {
+                    html += `
+                        <div class="surah-item" onclick="selectSurah(${s.number})">
+                            <span class="surah-number">${s.number}.</span>
+                            <span class="surah-name">${s.nameEnglish}</span>
+                            <span class="surah-arabic">${s.nameArabic}</span>
+                            <span class="surah-ayah-count">(${s.ayahs} Ayahs)</span>
+                        </div>
+                    `;
+                });
+            }
+            surahListResults.innerHTML = html;
+        }
+
+        function filterSurahs() {
+            const query = surahSearchInput.value.trim().toLowerCase();
+            const filtered = surahData.filter(s => {
+                const numberMatch = s.number.toString().includes(query);
+                const nameEnglishMatch = s.nameEnglish.toLowerCase().includes(query);
+                const nameArabicMatch = s.nameArabic.includes(query); 
+                return numberMatch || nameEnglishMatch || nameArabicMatch;
+            });
+            renderSurahList(filtered);
+        }
+
+        function toggleSurahSearch() {
+            const isHidden = surahSearchPanel.classList.contains('hidden');
+            if (isHidden) {
+                surahSearchPanel.classList.remove('hidden');
+                // Render the full list when opening
+                renderSurahList(surahData); 
+                surahSearchInput.value = '';
+                // Focus on input for immediate typing on mobile/desktop
+                setTimeout(() => surahSearchInput.focus(), 100); 
+            } else {
+                surahSearchPanel.classList.add('hidden');
+                surahSearchInput.blur(); // Remove focus
+            }
+        }
+        
+        function selectSurah(surahNumber) {
+            toggleSurahSearch(); // Hide the search panel
+            handleSingleSurahInput(surahNumber.toString()); // Trigger the existing Ayah list display
+        }
+
+        // Initialize the Surah List on load (hidden)
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSurahList(surahData);
+        });
+
+        // =========================================================
+        // Ayah List and Input Handling
+        // =========================================================
+        
+        function handleSingleSurahInput(surahNumInput) {
+            const surahNum = parseInt(surahNumInput);
+            if (isNaN(surahNum) || surahNum < 1 || surahNum > 114) {
+                 showMessage('Invalid Surah number. Please enter a number between 1 and 114.');
+                 return;
+            }
+
+            // Check if any language tool is selected
+            if (!settings.arabic && !settings.urdu && !settings.english) {
+                showMessage('Please select at least one language tool (Arabic, Urdu, or English) before viewing the Surah Ayah list.');
+                return;
+            }
+
+            const surahName = surahNames[surahNum - 1];
+            const maxAyah = surahAyahCounts[surahNum - 1];
+
+            showMessage(<div style="text-align: right; color: #d6a7ff;">${surahNumInput}</div>);
+            
+            const messageId = crypto.randomUUID(); 
+            const botMsg = document.createElement('div');
+            botMsg.className = "message";
+            botMsg.id = message-list-${messageId};
+            
+            let listHTML = `
+                <h2 style="color: #a45af7; font-size: 1.5rem; margin-bottom: 15px;">Surah ${surahName} (${surahNum})</h2>
+                <p style="margin-bottom: 10px;">Select an Ayah number (1 - ${maxAyah}) to view its text and translations:</p>
+                <div class="ayah-list-grid">
+            `;
+
+            for (let i = 1; i <= maxAyah; i++) {
+                // When clicked, it calls fetchVerse with the full Surah.Ayah reference
+                listHTML += <button onclick="fetchVerse('${surahNum}.${i}')">${i}</button>;
+            }
+
+            listHTML += </div>;
+            
+            botMsg.innerHTML = listHTML;
+            chatBox.appendChild(botMsg);
+            smoothScrollToBottom(chatBox); // Scrolls on new message post
+        }
+
+        function processInput() {
+            const input = userInput.value.trim().replace(/\s+|\.+$/g, '');
+            userInput.value = ''; // Clear input immediately
+            if (!input) { showMessage('Please enter a verse reference like "1.2" or a Surah number like "2".'); return; }
+
+            // Check if input is a Surah.Ayah format
+            if (input.includes('.')) {
+                fetchVerse(input);
+            } else {
+                // Check if input is a single Surah number
+                const surahNum = parseInt(input);
+                if (surahNum >= 1 && surahNum <= 114) {
+                    handleSingleSurahInput(input);
+                } else {
+                    showMessage('Invalid input. Please use "Surah.Ayah" (e.g., 1.2) or a single Surah number (e.g., 2).');
+                }
+            }
+        }
+        
+        function setupAudioSeek(messageId) {
+            const audioProgress = document.getElementById(audioProgress-${messageId});
+            const audioProgressBar = document.getElementById(audioProgressBar-${messageId});
+
+            if (audioProgress) {
+                audioProgress.addEventListener('click', (e) => {
+                    if (!currentAudio) return;
+
+                    const targetPlayBtn = document.getElementById(playBtn-${messageId});
+                    if (targetPlayBtn.querySelector('i').classList.contains('fa-pause')) {
+                        const rect = audioProgress.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left; 
+                        const percentage = clickX / rect.width; 
+                        
+                        if (currentAudio.duration && isFinite(currentAudio.duration)) {
+                            const seekTime = currentAudio.duration * percentage;
+                            currentAudio.currentTime = seekTime;
+                            audioProgressBar.style.width = ${percentage * 100}%;
+                        }
+                    }
+                });
+            }
+        }
+
+        async function fetchVerse(input) {
+            if (isFetching) return;
+
+            // Hide tool panel when searching
+            document.getElementById('toolControls').style.display = 'none';
+            
+            const ref = validateInput(input);
+            if (!ref) {
+                showMessage('Invalid reference. Please use the format "Surah.Ayah" (e.g., 1.2). Note: Surah must be between 1 and 114, and the Ayah must be valid.');
+                return;
+            }
+
+            // Get navigation data before sending message
+            const currentSurah = ref.surah;
+            const currentAyah = ref.verse;
+            const prevAyahRef = getAdjacentAyah(currentSurah, currentAyah, 'prev');
+            const nextAyahRef = getAdjacentAyah(currentSurah, currentAyah, 'next');
+
+            showMessage(<div style="text-align: right; color: #d6a7ff;">${input}</div>);
+
+            const messageId = crypto.randomUUID(); 
+            isFetching = true;
+            sendBtn.disabled = true;
+            typing.style.display = "flex";
+            
+            const verseRef = ${ref.surah}:${ref.verse};
+            const surahName = surahNames[ref.surah - 1] || Surah ${ref.surah};
+
+            // --- Dynamic Fetching based on Settings ---
+            const fetchPromises = [];
+
+            if (settings.arabic) fetchPromises.push(fetch(https://api.alquran.cloud/v1/ayah/${ref.surah}:${ref.verse}/quran-uthmani));
+            if (settings.urdu) fetchPromises.push(fetch(https://api.alquran.cloud/v1/ayah/${ref.surah}:${ref.verse}/ur.maududi));
+            if (settings.english) fetchPromises.push(fetch(https://api.alquran.cloud/v1/ayah/${ref.surah}:${ref.verse}/en.maududi));
+            if (settings.audio) fetchPromises.push(fetch(https://api.alquran.cloud/v1/ayah/${ref.surah}:${ref.verse}/ar.alafasy));
+            
+            // Check if any language tool is selected for the message content
+            const hasArabic = settings.arabic;
+            const hasUrdu = settings.urdu;
+            const hasEnglish = settings.english;
+            const hasAudio = settings.audio;
+
+             if (!hasArabic && !hasUrdu && !hasEnglish) {
+                showMessage('Please select at least one language tool (Arabic, Urdu, or English) to view the Ayah text.');
+                isFetching = false;
+                sendBtn.disabled = false;
+                typing.style.display = "none";
+                return;
+            }
+
+
+            let arabicData, urduResData, englishData, audioData;
+
+            try {
+                const results = await Promise.all(fetchPromises);
+                const jsonResults = await Promise.all(results.map(r => r.json()));
+
+                // Assign results based on what was fetched
+                let resultIndex = 0;
+                if (hasArabic) arabicData = jsonResults[resultIndex++];
+                if (hasUrdu) urduResData = jsonResults[resultIndex++];
+                if (hasEnglish) englishData = jsonResults[resultIndex++];
+                if (hasAudio) audioData = jsonResults[resultIndex++];
+
+                if (hasArabic && arabicData.code !== 200) {
+                    throw new Error('Arabic verse not found.');
+                }
+                
+                const audioUrl = hasAudio ? audioData?.data?.audio : null;
+                const arabicText = hasArabic ? arabicData?.data?.text : '';
+                const urduText = hasUrdu ? urduResData?.data?.text : '';
+                const englishText = hasEnglish ? englishData?.data?.text : '';
+
+                // Prepare combined text for Copy All (conditional on settings)
+                let allText = Surah ${surahName} (${verseRef});
+                if (hasArabic) allText += \n\nArabic: ${arabicText};
+                if (hasUrdu) allText += \n\nUrdu (Maududi): ${urduText};
+                if (hasEnglish) allText += \n\nEnglish (Maududi): ${englishText};
+
+
+                // 1. Prepare the Message element (TEXT & per-language copy actions)
+                const botMsg = document.createElement('div');
+                botMsg.className = "message";
+                botMsg.id = message-${messageId};
+
+                let responseTextHTML = <b>${surahName} (${verseRef})</b><br>;
+                
+                // ARABIC TEXT SECTION (Conditional)
+                if (hasArabic) {
+                    responseTextHTML += `
+                        <br>
+                        <b style="font-family: 'Noto Naskh Arabic', serif;">Arabic:</b> 
+                        <div class="text-content-row">
+                            <span id="arabicText-${messageId}" style="font-family: 'Noto Naskh Arabic', serif; font-size: 24px; line-height: 1.8;"></span>
+                        </div>
+                        <!-- Per-language actions, hidden initially - NOW ICON ONLY -->
+                        <div class="language-action-bar" id="arabicActions-${messageId}" style="opacity:0;">
+                            <button onclick="copyVerse('${arabicText.replace(/'/g, "\\'")}')" title="Copy Arabic"><i class="fas fa-copy"></i></button>
+                            <button onclick="shareSingleVerse('${ref.surah}:${ref.verse}', 'Arabic', '${arabicText.replace(/'/g, "\\'")}')" title="Share Arabic"><i class="fas fa-share"></i></button>
+                        </div>
+                    `;
+                }
+
+                // URDU TEXT SECTION (Conditional) - NOTE: Label moved to streaming logic
+                if (hasUrdu) {
+                    // Divider needs to be hidden initially
+                    if (hasArabic) responseTextHTML += <div class="divider" id="urduDivider-${messageId}" style="display:none;"></div>;
+                    
+                    responseTextHTML += `
+                        <!-- Urdu Label Placeholder -->
+                        <div id="urduLabelContainer-${messageId}"></div>
+                        <div class="text-content-row">
+                            <span id="urduText-${messageId}" style="font-family: 'Noto Nastaliq Urdu', serif;"></span>
+                        </div>
+                        <!-- Per-language actions, hidden initially - NOW ICON ONLY -->
+                        <div class="language-action-bar" id="urduActions-${messageId}" style="opacity:0;">
+                            <button onclick="copyVerse('Urdu (Maududi): ${urduText.replace(/'/g, "\\'")}')" title="Copy Urdu"><i class="fas fa-copy"></i></button>
+                            <button onclick="shareSingleVerse('${ref.surah}:${ref.verse}', 'Urdu', 'Urdu (Maududi): ${urduText.replace(/'/g, "\\'")}')" title="Share Urdu"><i class="fas fa-share"></i></button>
+                        </div>
+                    `;
+                }
+
+                // ENGLISH TEXT SECTION (Conditional) - NOTE: Label moved to streaming logic
+                if (hasEnglish) {
+                    // Divider needs to be hidden initially
+                    if (hasArabic || hasUrdu) responseTextHTML += <div class="divider" id="englishDivider-${messageId}" style="display:none;"></div>;
+                    
+                    responseTextHTML += `
+                        <!-- English Label Placeholder -->
+                        <div id="englishLabelContainer-${messageId}"></div>
+                        <div class="text-content-row">
+                            <span id="englishText-${messageId}"></span>
+                        </div>
+                        <!-- Per-language actions, hidden initially - NOW ICON ONLY -->
+                        <div class="language-action-bar" id="englishActions-${messageId}" style="opacity:0;">
+                            <button onclick="copyVerse('English (Maududi): ${englishText.replace(/'/g, "\\'")}')" title="Copy English"><i class="fas fa-copy"></i></button>
+                            <button onclick="shareSingleVerse('${ref.surah}:${ref.verse}', 'English', 'English (Maududi): ${englishText.replace(/'/g, "\\'")}')" title="Share English"><i class="fas fa-share"></i></button>
+                        </div>
+                    `;
+                }
+                
+                // 2. Final Action Block (Hidden until streaming is complete)
+                const finalActionBlockHTML = `
+                    <div id="finalActionBlock-${messageId}" style="display: none;">
+                        <div class="divider"></div>
+                        <!-- View All Ayahs Button -->
+                        <div class="final-actions" style="margin-top:0; padding-top:0; border-top: none;">
+                            <button onclick="handleSingleSurahInput(${ref.surah})" class="full-surah-btn"><i class="fas fa-list"></i> View All Ayahs of Surah ${surahName}</button>
+                        </div>
+                        <!-- Copy All / Share All Actions (with text and icon, as requested) -->
+                        <div class="final-actions">
+                            <button onclick="copyVerse('${allText.replace(/'/g, "\\'")}')"><i class="fas fa-copy"></i> Copy All</button>
+                            <button onclick="shareAllVerse('${input}', '${surahName}', '${allText.replace(/'/g, "\\'")}')"><i class="fas fa-share"></i> Share All</button>
+                        </div>
+                    </div>
+                `;
+
+                botMsg.innerHTML = responseTextHTML + finalActionBlockHTML;
+                chatBox.appendChild(botMsg); 
+                smoothScrollToBottom(chatBox);
+
+                // 3. Stream texts sequentially based on selection and show actions
+                
+                // --- ARABIC STREAMING ---
+                if (hasArabic) {
+                    await streamText(arabicLabel-${messageId}, arabicText-${messageId}, arabicText);
+                    document.getElementById(arabicActions-${messageId}).style.opacity = '1';
+                    await new Promise(resolve => setTimeout(resolve, 300)); 
+                }
+
+                // --- URDU STREAMING ---
+                if (hasUrdu) {
+                    // 1. Show divider if Arabic was present
+                    if (hasArabic) document.getElementById(urduDivider-${messageId}).style.display = 'block';
+                    
+                    // 2. Show Urdu label (Appears right before streaming Urdu text)
+                    document.getElementById(urduLabelContainer-${messageId}).innerHTML = `
+                        <b style="font-family: 'Noto Nastaliq Urdu', serif;">Urdu (Maududi):</b>
+                    `;
+                    smoothScrollToBottom(chatBox);
+
+                    // 3. Stream Urdu text
+                    await streamText(urduLabel-${messageId}, urduText-${messageId}, urduText);
+                    
+                    // 4. Show Urdu actions
+                    document.getElementById(urduActions-${messageId}).style.opacity = '1';
+                    await new Promise(resolve => setTimeout(resolve, 300)); 
+                }
+
+                // --- ENGLISH STREAMING ---
+                if (hasEnglish) {
+                    // 1. Show divider if Arabic or Urdu was present
+                    if (hasArabic || hasUrdu) document.getElementById(englishDivider-${messageId}).style.display = 'block';
+
+                    // 2. Show English label (Appears right before streaming English text)
+                    document.getElementById(englishLabelContainer-${messageId}).innerHTML = `
+                        <b>English (Maududi):</b>
+                    `;
+                    smoothScrollToBottom(chatBox);
+
+                    // 3. Stream English text
+                    await streamText(englishLabel-${messageId}, englishText-${messageId}, englishText);
+                    
+                    // 4. Show English actions
+                    document.getElementById(englishActions-${messageId}).style.opacity = '1';
+                    await new Promise(resolve => setTimeout(resolve, 300)); 
+                }
+                
+                // 4. Show final actions after ALL streaming is complete
+                const finalActionBlock = document.getElementById(finalActionBlock-${messageId});
+                if (finalActionBlock) {
+                     finalActionBlock.style.display = 'block';
+                     smoothScrollToBottom(chatBox);
+                }
+
+                // 5. Create and show the Action Panel (Audio/Navigation) if enabled
+                if (hasAudio && audioUrl) {
+                    const actionPanelDiv = document.createElement('div');
+                    actionPanelDiv.className = "action-panel";
+                    actionPanelDiv.id = actionPanel-${messageId};
+                    
+                    const actionPanelHTML = `
+                        <div class="audio-progress" id="audioProgress-${messageId}">
+                            <div class="audio-progress-bar" id="audioProgressBar-${messageId}"></div>
+                        </div>
+
+                        <div class="final-actions"> <!-- Reuse final-actions styling for nav/audio buttons -->
+                            <button onclick="fetchVerse('${prevAyahRef}')"><i class="fas fa-chevron-left"></i> Prev</button>
+                            <button id="playBtn-${messageId}" onclick="toggleAudio('${audioUrl}', '${messageId}')"><i class="fas fa-play"></i> Play Audio</button>
+                            <button onclick="fetchVerse('${nextAyahRef}')">Next <i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    `;
+                    actionPanelDiv.innerHTML = actionPanelHTML;
+                    chatBox.appendChild(actionPanelDiv); 
+                    setupAudioSeek(messageId);
+                    smoothScrollToBottom(chatBox);
+                }
+
+
+            } catch (error) {
+                console.error(error);
+                showMessage(Failed to fetch verse. Error: ${error.message}. Please check the reference or your selected tools.<br><button onclick="fetchVerse('${input}')">Retry</button>);
+            } finally {
+                typing.style.display = "none";
+                sendBtn.disabled = false;
+                isFetching = false;
+            }
+        }
+
+        function toggleAudio(url, messageId) {
+            const playBtn = document.getElementById(playBtn-${messageId});
+            const progressBar = document.getElementById(audioProgressBar-${messageId});
+            
+            const resetPreviousAudio = () => {
+                if (currentAudio) {
+                    currentAudio.pause();
+                    document.querySelectorAll('.final-actions button i.fa-pause').forEach(icon => {
+                        icon.classList.remove('fa-pause');
+                        icon.classList.add('fa-play');
+                        if (icon.closest('button').id.startsWith('playBtn-')) {
+                            icon.closest('button').innerHTML = '<i class="fas fa-play"></i> Play Audio';
+                        }
+                    });
+                    document.querySelectorAll('.audio-progress-bar').forEach(bar => bar.style.width = '0%');
+                }
+            };
+            
+            const isSameAudio = currentAudio && currentAudio.src === url;
+            const isCurrentlyPlaying = isSameAudio && playBtn.querySelector('i').classList.contains('fa-pause');
+
+            if (isCurrentlyPlaying) {
+                currentAudio.pause();
+                playBtn.innerHTML = '<i class="fas fa-play"></i> Play Audio';
+                return;
+            } 
+            
+            resetPreviousAudio(); 
+
+            if (isSameAudio) {
+                 // Resuming same audio
+                 currentAudio.play().then(() => {
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i> Pause Audio';
+                }).catch(err => {
+                    showMessage('Unable to resume audio.');
+                });
+            } else {
+                // New audio
+                currentAudio = new Audio(url);
+                currentAudio.play().then(() => {
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i> Pause Audio';
+                    
+                    currentAudio.ontimeupdate = () => {
+                        if (currentAudio.duration && currentAudio.duration > 0) {
+                            const progress = (currentAudio.currentTime / currentAudio.duration) * 100;
+                            progressBar.style.width = ${progress}%;
+                        }
+                    };
+                    
+                    currentAudio.onended = () => {
+                        playBtn.innerHTML = '<i class="fas fa-play"></i> Play Audio';
+                        progressBar.style.width = '0%';
+                        currentAudio = null; 
+                    };
+
+                }).catch(err => {
+                    showMessage('Unable to play audio. Please try again or check your connection.');
+                });
+            }
+        }
+
+        // --- Utility Functions ---
+        function copyVerse(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showMessage('Text copied to clipboard!');
+        }
+        
+        function generalShare(title, text) {
+            const url = window.location.href;
+            if (navigator.share) {
+                navigator.share({ title, text, url });
+            } else {
+                showMessage('Sharing is not supported on this device. You can copy the text instead!');
+            }
+        }
+
+        // New function for single language share
+        function shareSingleVerse(ref, language, text) {
+            const surahName = surahNames[parseInt(ref.split(':')[0]) - 1] || 'Surah';
+            const title = Quran: ${surahName} (${ref}) - ${language};
+            const shareText = 📜 ${title}\n\n${text}\n\n[Shared via Quran.ai];
+            generalShare(title, shareText);
+        }
+
+        function shareAllVerse(ref, surah, allText) {
+            const verseNum = ref.split('.')[1];
+            const title = Quran: ${surah} (${ref}) - Ayah ${verseNum} (Full);
+            const text = 📜 ${title}\n\n${allText}\n\n[Shared via Quran.ai];
+            generalShare(title, text);
+        }
+
+        let lastFetchTime = 0;
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const now = Date.now();
+                if (now - lastFetchTime > 500) {
+                    lastFetchTime = now;
+                    processInput(); // Call the new processing function
+                }
+            }
+        });
+    </script>
+</body>
+</html>
